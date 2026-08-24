@@ -2,7 +2,7 @@ import { chmod, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-export async function createFakeContainerCli() {
+export async function createFakeContainerCli(inspectStatus = "running") {
   const directory = await mkdtemp(join(tmpdir(), "fake-container-cli-"));
   const containerBinary = join(directory, "container");
 
@@ -17,6 +17,11 @@ const command = args[0];
 
 if (process.env.FAKE_CONTAINER_LOG) {
   appendFileSync(process.env.FAKE_CONTAINER_LOG, JSON.stringify(args) + "\\n");
+}
+
+if (command === "inspect") {
+  console.log(JSON.stringify([{ status: { state: ${JSON.stringify(inspectStatus)} } }]));
+  process.exit(0);
 }
 
 if (["create", "start", "stop", "delete"].includes(command)) {

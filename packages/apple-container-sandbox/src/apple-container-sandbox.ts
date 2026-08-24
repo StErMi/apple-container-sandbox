@@ -9,4 +9,7 @@ export interface AppleContainerSandbox extends HarnessV1SandboxProvider {
   createSession(
     options?: Parameters<HarnessV1SandboxProvider["createSession"]>[0],
   ): Promise<AppleContainerSandboxSession>;
+  resumeSession(
+    options: Parameters<NonNullable<HarnessV1SandboxProvider["resumeSession"]>>[0],
+  ): Promise<AppleContainerSandboxSession>;
 }

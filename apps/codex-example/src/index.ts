@@ -86,7 +86,7 @@ try {
   if (codexSession) {
     await Promise.resolve(codexSession.doDestroy()).catch(() => {});
   }
-  await sandboxSession?.stop().catch(() => {});
+  await sandboxSession?.destroy().catch(() => {});
 }
 
 async function applyBootstrap(

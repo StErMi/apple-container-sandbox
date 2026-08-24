@@ -80,5 +80,5 @@ try {
     throw error;
   }
 } finally {
-  await sandboxSession?.stop();
+  await sandboxSession?.destroy();
 }

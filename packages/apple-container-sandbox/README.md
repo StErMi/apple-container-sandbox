@@ -17,7 +17,8 @@ Apple silicon development machine.
   `Experimental_SandboxSession` methods.
 - Publish selected sandbox ports on `127.0.0.1` for local bridges, servers, or
   harness integrations.
-- Clean up containers automatically when a session stops.
+- Stop and resume Harness sessions without losing the container filesystem.
+- Delete containers explicitly when a session is destroyed.
 
 ## Requirements
 
@@ -49,7 +50,7 @@ pnpm add @lgrammel/apple-container-sandbox
 
 ### Direct Usage
 
-Write a file, run it in a sandbox, read the result, and stop the session:
+Write a file, run it in a sandbox, read the result, and destroy the session:
 
 ```ts
 import { createAppleContainerSandbox } from "@lgrammel/apple-container-sandbox";
@@ -80,8 +81,31 @@ try {
   console.log(runResult.stdout.trim());
   console.log(await sandboxSession.readTextFile({ path: "/workspace/result.txt" }));
 } finally {
-  await sandboxSession.stop();
+  await sandboxSession.destroy();
 }
+```
+
+### Lifecycle and Resume
+
+The provider follows the AI SDK Harness lifecycle contract:
+
+- `stop()` stops the Apple container but retains it for a later resume.
+- `resumeSession({ sessionId })` reattaches to a running container or starts a
+  stopped container with the same filesystem.
+- `destroy()` permanently deletes the container.
+
+`HarnessAgent` calls `resumeSession()` automatically when `resumeFrom` or
+`continueFrom` is supplied. For direct provider usage, resume with the same
+stable session id:
+
+```ts
+const sessionId = "coding-session";
+const session = await appleContainerSandbox.createSession({ sessionId });
+
+await session.stop();
+
+const resumedSession = await appleContainerSandbox.resumeSession({ sessionId });
+await resumedSession.destroy();
 ```
 
 In this repository, run the workspace example:
@@ -141,7 +165,7 @@ try {
 
   console.log(result.text);
 } finally {
-  await sandboxSession.stop();
+  await sandboxSession.destroy();
 }
 ```
 
@@ -250,7 +274,7 @@ try {
   if (codexSession) {
     await Promise.resolve(codexSession.doDestroy()).catch(() => {});
   }
-  await sandboxSession?.stop().catch(() => {});
+  await sandboxSession?.destroy().catch(() => {});
 }
 
 async function applyBootstrap(
@@ -338,7 +362,6 @@ const appleContainerSandbox = createAppleContainerSandbox({
   ],
   ports: [4100],
   containerBinary: "/opt/homebrew/bin/container",
-  keepContainer: false,
 });
 ```
 
@@ -356,8 +379,8 @@ const appleContainerSandbox = createAppleContainerSandbox({
 - `containerBinary`: Apple Container CLI binary. Defaults to `container`.
 - `containerArgs`: extra arguments passed to `container create` before the
   image name.
-- `name`: explicit container name. A random name is generated when omitted.
-- `keepContainer`: keep the container after `stop()`. Defaults to `false`.
+- `name`: explicit container name used when `createSession()` does not receive
+  a Harness session id. A random name is generated when both are omitted.
 
 If `container` is installed but not on `PATH`, either add its directory to
 `PATH` or set `containerBinary`.

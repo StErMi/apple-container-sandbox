@@ -28,7 +28,6 @@ test("creates an AI SDK-compatible sandbox session", async () => {
     expect(sandboxSession.id).toBe("test-session");
     expect(sandboxSession.defaultWorkingDirectory).toBe(cwd);
     expect(sandboxSession.ports).toEqual([]);
-    expect(sandboxSession.destroy).toBe(sandboxSession.stop);
     expect(sandboxSession.description).toMatch(/fake-node:latest/);
 
     const runResult = await sandboxSession.run({
@@ -73,7 +72,7 @@ test("creates an AI SDK-compatible sandbox session", async () => {
       HarnessCapabilityUnsupportedError,
     );
   } finally {
-    await sandboxSession.stop().catch(() => {});
+    await sandboxSession.destroy().catch(() => {});
   }
 });
 
@@ -106,7 +105,7 @@ test("publishes configured ports and resolves local port urls", async () => {
         HarnessCapabilityUnsupportedError,
       );
     } finally {
-      await sandboxSession.stop().catch(() => {});
+      await sandboxSession.destroy().catch(() => {});
     }
 
     const commands = (await readFile(logPath, "utf8"))
@@ -173,7 +172,7 @@ test("passes configured host directory mounts to container create", async () => 
     try {
       expect(sandboxSession.id).toBe("mount-session");
     } finally {
-      await sandboxSession.stop().catch(() => {});
+      await sandboxSession.destroy().catch(() => {});
     }
 
     const commands = (await readFile(logPath, "utf8"))
@@ -314,6 +313,61 @@ test("uses the harness session id and onFirstCreate hook", async () => {
       "bootstrapped",
     );
   } finally {
-    await sandboxSession.stop().catch(() => {});
+    await sandboxSession.destroy().catch(() => {});
+  }
+});
+
+test.each([
+  [
+    "running",
+    [
+      ["inspect", "resume-session"],
+      ["stop", "resume-session"],
+      ["delete", "--force", "resume-session"],
+    ],
+  ],
+  [
+    "stopped",
+    [
+      ["inspect", "resume-session"],
+      ["start", "resume-session"],
+      ["stop", "resume-session"],
+      ["delete", "--force", "resume-session"],
+    ],
+  ],
+])("resumes a %s session and separates stop from destroy", async (status, expectedCommands) => {
+  const containerBinary = await createFakeContainerCli(status);
+  const cwd = await realpath(await mkdtemp(join(tmpdir(), "apple-container-sandbox-")));
+  const logPath = join(cwd, "container-commands.ndjson");
+  const previousLogPath = process.env.FAKE_CONTAINER_LOG;
+  process.env.FAKE_CONTAINER_LOG = logPath;
+
+  const readCommands = async () =>
+    (await readFile(logPath, "utf8"))
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line) as string[]);
+
+  try {
+    const appleContainerSandbox = createAppleContainerSandbox({ containerBinary, cwd });
+    const sandboxSession = await appleContainerSandbox.resumeSession({
+      sessionId: "resume-session",
+    });
+
+    expect(sandboxSession.id).toBe("resume-session");
+
+    await sandboxSession.stop();
+    await sandboxSession.stop();
+    expect(await readCommands()).toEqual(expectedCommands.slice(0, -1));
+
+    await sandboxSession.destroy();
+    await sandboxSession.destroy();
+    expect(await readCommands()).toEqual(expectedCommands);
+  } finally {
+    if (previousLogPath == null) {
+      delete process.env.FAKE_CONTAINER_LOG;
+    } else {
+      process.env.FAKE_CONTAINER_LOG = previousLogPath;
+    }
   }
 });
