@@ -17,6 +17,7 @@ import type {
   NormalizedAppleContainerSandboxMount,
   NormalizedAppleContainerSandboxOptions,
 } from "./normalized-apple-container-sandbox-options.js";
+import { parseContainerStatus } from "./parse-container-status.js";
 import { runContainerCli } from "./run-container-cli.js";
 import { shellQuote } from "./shell-quote.js";
 
@@ -29,7 +30,6 @@ export function createAppleContainerSandbox(
     cwd: options.cwd ?? defaultCwd,
     env: options.env ?? {},
     image: options.image ?? defaultImage,
-    keepContainer: options.keepContainer ?? false,
     memory: options.memory,
     mounts: normalizeMounts(options.mounts ?? []),
     name: options.name,
@@ -42,7 +42,7 @@ export function createAppleContainerSandbox(
     specificationVersion: "harness-sandbox-v1",
     providerId: "apple-container-sandbox",
     async createSession({ abortSignal, onFirstCreate, sessionId } = {}) {
-      const id = normalizedOptions.name ?? sessionId ?? `ai-sdk-sandbox-${randomUUID()}`;
+      const id = sessionId ?? normalizedOptions.name ?? `ai-sdk-sandbox-${randomUUID()}`;
       let containerCreated = false;
 
       const keepAliveCommand = [
@@ -82,15 +82,7 @@ export function createAppleContainerSandbox(
 
         assertSuccessfulResult("start sandbox container", startResult);
 
-        const session = new AppleContainerSandboxSession({
-          containerBinary: normalizedOptions.containerBinary,
-          cwd: normalizedOptions.cwd,
-          env: normalizedOptions.env,
-          id,
-          image: normalizedOptions.image,
-          keepContainer: normalizedOptions.keepContainer,
-          ports: normalizedOptions.ports,
-        });
+        const session = createSessionWrapper(id, normalizedOptions);
 
         await onFirstCreate?.(session.restricted(), { abortSignal });
 
@@ -105,7 +97,46 @@ export function createAppleContainerSandbox(
         throw error;
       }
     },
+    async resumeSession({ abortSignal, sessionId }) {
+      abortSignal?.throwIfAborted();
+
+      const inspectResult = await runContainerCli(
+        normalizedOptions.containerBinary,
+        ["inspect", sessionId],
+        { abortSignal },
+      );
+
+      assertSuccessfulResult(`resume Apple Container sandbox ${sessionId}`, inspectResult);
+
+      const status = parseContainerStatus(sessionId, inspectResult);
+
+      if (status === "stopped") {
+        const startResult = await runContainerCli(
+          normalizedOptions.containerBinary,
+          ["start", sessionId],
+          { abortSignal },
+        );
+
+        assertSuccessfulResult(`resume Apple Container sandbox ${sessionId}`, startResult);
+      }
+
+      return createSessionWrapper(sessionId, normalizedOptions);
+    },
   };
+}
+
+function createSessionWrapper(
+  id: string,
+  options: NormalizedAppleContainerSandboxOptions,
+): AppleContainerSandboxSession {
+  return new AppleContainerSandboxSession({
+    containerBinary: options.containerBinary,
+    cwd: options.cwd,
+    env: options.env,
+    id,
+    image: options.image,
+    ports: options.ports,
+  });
 }
 
 function normalizePorts(ports: ReadonlyArray<number>): ReadonlyArray<number> {

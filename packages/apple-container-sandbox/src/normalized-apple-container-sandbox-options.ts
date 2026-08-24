@@ -4,7 +4,6 @@ export interface NormalizedAppleContainerSandboxOptions {
   cwd: string;
   env: Record<string, string>;
   image: string;
-  keepContainer: boolean;
   memory?: string;
   mounts: ReadonlyArray<NormalizedAppleContainerSandboxMount>;
   name?: string;

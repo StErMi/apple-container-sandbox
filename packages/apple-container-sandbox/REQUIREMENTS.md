@@ -28,7 +28,7 @@
   contract with specification version `harness-sandbox-v1`.
 - The sandbox must preserve the supplied options object.
 - Supported option fields are `image`, `cwd`, `env`, `containerBinary`,
-  `containerArgs`, `memory`, `mounts`, `ports`, `name`, and `keepContainer`.
+  `containerArgs`, `memory`, `mounts`, `ports`, and `name`.
 - `image` defaults to `alpine:latest`.
 - `cwd` defaults to `/workspace`.
 - `memory`, when supplied, must be passed to `container create` with
@@ -46,10 +46,17 @@
 ## Sandbox Sessions
 
 - `createSession()` must create and start a long-lived Apple container.
-- `createSession({ sessionId })` must use `sessionId` as the container id when
-  no explicit `name` option is configured.
+- `createSession({ sessionId })` must use `sessionId` as the container id.
+- The `name` option must be used only when `createSession()` does not receive a
+  `sessionId`.
 - `createSession({ onFirstCreate })` must run the hook once after container
   startup with the restricted sandbox session surface.
+- `resumeSession({ sessionId })` must inspect and reattach to the existing
+  container with the same id.
+- `resumeSession()` must start a stopped container and must not restart an
+  already-running container.
+- `resumeSession()` must not create a replacement container or rerun
+  `onFirstCreate` when the requested container does not exist.
 - Sandbox commands must execute through `container exec` and `/bin/sh -lc`.
 - Session-level `env` values must apply to commands, and per-command `env`
   values must take precedence.
@@ -60,9 +67,11 @@
 - File writes must create parent directories and overwrite existing files.
 - `run()` must return `exitCode`, `stdout`, and `stderr` without throwing for
   non-zero command exits.
-- `stop()` must stop and delete the Apple container unless `keepContainer` is
-  true.
-- Harness session `destroy()` must be the same cleanup function as `stop()`.
+- `stop()` must stop and retain the Apple container so the session can be
+  resumed.
+- `destroy()` must stop the Apple container when needed and permanently delete
+  it.
+- `stop()` and `destroy()` must be idempotent for a session wrapper.
 - Configured ports must be passed to `container create` with `--publish` and
   published on `127.0.0.1` with the same host and container port.
 - `getPortUrl()` must resolve configured ports to local URLs and must reject

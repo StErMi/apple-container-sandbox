@@ -72,14 +72,8 @@ export interface AppleContainerSandboxOptions {
   ports?: ReadonlyArray<number>;
 
   /**
-   * Explicit container name. A random name is generated when omitted.
+   * Explicit container name used when `createSession()` does not receive a
+   * Harness session id. A random name is generated when both are omitted.
    */
   name?: string;
-
-  /**
-   * Keep the container after `stop()` instead of deleting it.
-   *
-   * @default false
-   */
-  keepContainer?: boolean;
 }

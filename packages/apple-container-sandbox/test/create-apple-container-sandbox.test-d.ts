@@ -20,7 +20,6 @@ test("createAppleContainerSandbox exposes the sandbox type", () => {
       NODE_ENV: "test",
     },
     image: "node:22",
-    keepContainer: true,
     memory: "2G",
     mounts: [
       {

@@ -34,8 +34,9 @@ export class AppleContainerSandboxSession {
   #closed = false;
   #containerBinary: string;
   #cwd: string;
+  #destroyPromise: Promise<void> | undefined;
   #env: Record<string, string>;
-  #keepContainer: boolean;
+  #stopPromise: Promise<void> | undefined;
 
   constructor({
     containerBinary,
@@ -43,13 +44,11 @@ export class AppleContainerSandboxSession {
     env,
     id,
     image,
-    keepContainer,
     ports,
   }: AppleContainerSandboxSessionOptions) {
     this.#containerBinary = containerBinary;
     this.#cwd = cwd;
     this.#env = env;
-    this.#keepContainer = keepContainer;
     this.defaultWorkingDirectory = cwd;
     this.id = id;
     this.image = image;
@@ -267,28 +266,42 @@ export class AppleContainerSandboxSession {
     };
   }
 
-  readonly stop = async (): Promise<void> => {
-    if (this.#closed) {
-      return;
+  readonly stop = (): Promise<void> => {
+    if (this.#destroyPromise != null) {
+      return this.#destroyPromise;
+    }
+
+    if (this.#stopPromise != null) {
+      return this.#stopPromise;
     }
 
     this.#closed = true;
-
-    if (this.#keepContainer) {
-      return;
-    }
-
-    const stop = await runContainerCli(this.#containerBinary, ["stop", this.id]);
-    const remove = await runContainerCli(this.#containerBinary, ["delete", "--force", this.id]);
-
-    if (stop.exitCode !== 0 && remove.exitCode !== 0) {
-      assertSuccessfulResult("stop sandbox container", stop);
-    }
-
-    assertSuccessfulResult("delete sandbox container", remove);
+    this.#stopPromise = this.#stopContainer();
+    return this.#stopPromise;
   };
 
-  readonly destroy = this.stop;
+  readonly destroy = (): Promise<void> => {
+    if (this.#destroyPromise != null) {
+      return this.#destroyPromise;
+    }
+
+    this.#closed = true;
+    this.#destroyPromise = this.#destroyContainer();
+    return this.#destroyPromise;
+  };
+
+  async #stopContainer(): Promise<void> {
+    const result = await runContainerCli(this.#containerBinary, ["stop", this.id]);
+    assertSuccessfulResult("stop sandbox container", result);
+  }
+
+  async #destroyContainer(): Promise<void> {
+    this.#stopPromise ??= this.#stopContainer();
+    await this.#stopPromise.catch(() => {});
+
+    const remove = await runContainerCli(this.#containerBinary, ["delete", "--force", this.id]);
+    assertSuccessfulResult("delete sandbox container", remove);
+  }
 
   #assertOpen(): void {
     if (this.#closed) {
