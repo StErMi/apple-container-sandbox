@@ -4,6 +4,7 @@ import { Readable } from "node:stream";
 import {
   HarnessCapabilityUnsupportedError,
   type HarnessV1NetworkSandboxSession,
+  type HarnessV1PortEndpoint,
 } from "@ai-sdk/harness";
 
 import { AppleContainerSandboxError } from "./apple-container-sandbox-error.js";
@@ -242,14 +243,20 @@ export class AppleContainerSandboxSession {
   }
 
   async getPortUrl(options: { port: number; protocol?: "http" | "https" | "ws" }): Promise<string> {
+    return (await this.getPortEndpoint(options)).url;
+  }
+
+  async getPortEndpoint(options: {
+    port: number;
+    protocol?: "http" | "https" | "ws";
+  }): Promise<HarnessV1PortEndpoint> {
     if (!this.ports.includes(options.port)) {
       throw new HarnessCapabilityUnsupportedError({
         message: `Apple Container sandbox session ${this.id} does not expose port ${options.port}.`,
       });
     }
 
-    const protocol = options.protocol ?? "http";
-    return `${protocol}://127.0.0.1:${options.port}`;
+    return { url: `${options.protocol ?? "http"}://127.0.0.1:${options.port}` };
   }
 
   restricted(): ReturnType<HarnessV1NetworkSandboxSession["restricted"]> {

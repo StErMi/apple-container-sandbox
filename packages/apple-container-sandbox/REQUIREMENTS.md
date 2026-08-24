@@ -63,6 +63,7 @@
 - `readFile`, `readBinaryFile`, `readTextFile`, `writeFile`,
   `writeBinaryFile`, `writeTextFile`, `spawn`, and `run` must match the AI SDK
   `Experimental_SandboxSession` method shapes.
+- Sessions must implement the AI SDK `HarnessV1NetworkSandboxSession` contract.
 - File reads must return `null` when the path does not exist.
 - File writes must create parent directories and overwrite existing files.
 - `run()` must return `exitCode`, `stdout`, and `stderr` without throwing for
@@ -74,5 +75,9 @@
 - `stop()` and `destroy()` must be idempotent for a session wrapper.
 - Configured ports must be passed to `container create` with `--publish` and
   published on `127.0.0.1` with the same host and container port.
-- `getPortUrl()` must resolve configured ports to local URLs and must reject
-  unconfigured ports with `HarnessCapabilityUnsupportedError`.
+- `getPortEndpoint()` must resolve configured ports to local HTTP, HTTPS, or
+  WebSocket URLs, default to HTTP, and omit endpoint headers.
+- Port resolution must reject unconfigured ports with
+  `HarnessCapabilityUnsupportedError`.
+- `getPortUrl()` must remain available for backward compatibility and delegate
+  to `getPortEndpoint()`.

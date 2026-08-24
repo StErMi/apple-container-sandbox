@@ -293,7 +293,7 @@ async function applyBootstrap(
   for (const command of bootstrap.commands) {
     await runRequired(session, {
       command: command.command,
-      workingDirectory: command.workingDirectory,
+      workingDirectory: bootstrap.bootstrapDir,
       abortSignal,
     });
   }
@@ -375,7 +375,9 @@ const appleContainerSandbox = createAppleContainerSandbox({
 - `mounts`: host directories to bind mount into the sandbox. Relative
   `hostPath` values are resolved when the sandbox provider is created.
 - `ports`: TCP ports published on `127.0.0.1` with the same host and container
-  port.
+  port. Resolve one with `getPortEndpoint({ port, protocol })`; the protocol
+  defaults to `http`, and the returned endpoint has a local URL without
+  headers. `getPortUrl()` remains available for backward compatibility.
 - `containerBinary`: Apple Container CLI binary. Defaults to `container`.
 - `containerArgs`: extra arguments passed to `container create` before the
   image name.
