@@ -1,4 +1,5 @@
 export interface AppleContainerSandboxSessionOptions {
+  commandShell: string;
   containerBinary: string;
   cwd: string;
   env: Record<string, string>;

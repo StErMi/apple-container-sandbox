@@ -1,4 +1,5 @@
 export interface NormalizedAppleContainerSandboxOptions {
+  commandShell: string;
   containerArgs: string[];
   containerBinary: string;
   cwd: string;

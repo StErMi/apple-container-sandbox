@@ -76,6 +76,58 @@ test("creates an AI SDK-compatible sandbox session", async () => {
   }
 });
 
+test("runs commands through the configured command shell", async () => {
+  const containerBinary = await createFakeContainerCli();
+  const cwd = await realpath(await mkdtemp(join(tmpdir(), "apple-container-sandbox-")));
+  const logPath = join(cwd, "container-commands.ndjson");
+  const previousLogPath = process.env.FAKE_CONTAINER_LOG;
+  process.env.FAKE_CONTAINER_LOG = logPath;
+
+  const appleContainerSandbox = createAppleContainerSandbox({
+    commandShell: "/bin/bash",
+    containerBinary,
+    cwd,
+    image: "fake-node:latest",
+    name: "bash-session",
+  });
+
+  try {
+    const sandboxSession = await appleContainerSandbox.createSession();
+
+    try {
+      expect(
+        await sandboxSession.run({
+          command: 'values=(one two); printf "%s" "${values[1]}"',
+        }),
+      ).toEqual({ exitCode: 0, stdout: "two", stderr: "" });
+      expect(sandboxSession.description).toContain("/bin/bash -lc");
+    } finally {
+      await sandboxSession.destroy().catch(() => {});
+    }
+
+    const commands = (await readFile(logPath, "utf8"))
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line) as string[]);
+
+    expect(commands[2]).toEqual([
+      "exec",
+      "--workdir",
+      cwd,
+      "bash-session",
+      "/bin/bash",
+      "-lc",
+      'values=(one two); printf "%s" "${values[1]}"',
+    ]);
+  } finally {
+    if (previousLogPath == null) {
+      delete process.env.FAKE_CONTAINER_LOG;
+    } else {
+      process.env.FAKE_CONTAINER_LOG = previousLogPath;
+    }
+  }
+});
+
 test("publishes configured ports and resolves local port endpoints and urls", async () => {
   const containerBinary = await createFakeContainerCli();
   const cwd = await realpath(await mkdtemp(join(tmpdir(), "apple-container-sandbox-")));
