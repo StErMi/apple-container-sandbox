@@ -22,6 +22,13 @@ export interface AppleContainerSandboxMount {
 
 export interface AppleContainerSandboxOptions {
   /**
+   * Shell executable used by `run` and `spawn`.
+   *
+   * @default "/bin/sh"
+   */
+  commandShell?: string;
+
+  /**
    * Docker-compatible image used for each sandbox session.
    *
    * @default "alpine:latest"

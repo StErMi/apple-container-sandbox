@@ -25,6 +25,7 @@ export function createAppleContainerSandbox(
   options: AppleContainerSandboxOptions = {},
 ): AppleContainerSandbox {
   const normalizedOptions: NormalizedAppleContainerSandboxOptions = {
+    commandShell: options.commandShell ?? "/bin/sh",
     containerArgs: options.containerArgs ?? [],
     containerBinary: options.containerBinary ?? defaultContainerBinary,
     cwd: options.cwd ?? defaultCwd,
@@ -130,6 +131,7 @@ function createSessionWrapper(
   options: NormalizedAppleContainerSandboxOptions,
 ): AppleContainerSandboxSession {
   return new AppleContainerSandboxSession({
+    commandShell: options.commandShell,
     containerBinary: options.containerBinary,
     cwd: options.cwd,
     env: options.env,

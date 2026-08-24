@@ -17,6 +17,7 @@ import type {
 
 test("createAppleContainerSandbox exposes the sandbox type", () => {
   const appleContainerSandbox = createAppleContainerSandbox({
+    commandShell: "/bin/bash",
     containerArgs: ["--cpus", "2"],
     containerBinary: "container",
     cwd: "/workspace",

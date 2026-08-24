@@ -6,7 +6,8 @@
 - Consumers must use ESM imports for the published package entry point.
 - Hosts must provide the Apple Container CLI as `container`, unless a custom
   `containerBinary` option is supplied.
-- Sandbox images must be Docker-compatible and provide `/bin/sh`.
+- Sandbox images must be Docker-compatible and provide `/bin/sh` plus the
+  configured command shell, when different.
 
 ## Packaging
 
@@ -27,8 +28,10 @@
 - Returned sandboxes must implement the AI SDK `HarnessV1SandboxProvider`
   contract with specification version `harness-sandbox-v1`.
 - The sandbox must preserve the supplied options object.
-- Supported option fields are `image`, `cwd`, `env`, `containerBinary`,
-  `containerArgs`, `memory`, `mounts`, `ports`, and `name`.
+- Supported option fields are `commandShell`, `image`, `cwd`, `env`,
+  `containerBinary`, `containerArgs`, `memory`, `mounts`, `ports`, and
+  `name`.
+- `commandShell` defaults to `/bin/sh`.
 - `image` defaults to `alpine:latest`.
 - `cwd` defaults to `/workspace`.
 - `memory`, when supplied, must be passed to `container create` with
@@ -57,7 +60,8 @@
   already-running container.
 - `resumeSession()` must not create a replacement container or rerun
   `onFirstCreate` when the requested container does not exist.
-- Sandbox commands must execute through `container exec` and `/bin/sh -lc`.
+- Sandbox `run` and `spawn` commands must execute through `container exec`
+  and the configured command shell with `-lc`.
 - Session-level `env` values must apply to commands, and per-command `env`
   values must take precedence.
 - `readFile`, `readBinaryFile`, `readTextFile`, `writeFile`,

@@ -347,6 +347,7 @@ Optional environment variables:
 
 ```ts
 const appleContainerSandbox = createAppleContainerSandbox({
+  commandShell: "/bin/bash",
   image: "node:22",
   cwd: "/workspace",
   env: {
@@ -365,6 +366,8 @@ const appleContainerSandbox = createAppleContainerSandbox({
 });
 ```
 
+- `commandShell`: shell executable used by `run` and `spawn`. Defaults to
+  `/bin/sh`; use `/bin/bash` for commands that require Bash syntax.
 - `image`: Docker-compatible image for the sandbox. Defaults to
   `alpine:latest`.
 - `cwd`: default working directory inside the sandbox. Defaults to

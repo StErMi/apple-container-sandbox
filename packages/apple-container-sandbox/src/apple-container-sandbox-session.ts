@@ -33,6 +33,7 @@ export class AppleContainerSandboxSession {
   readonly ports: ReadonlyArray<number>;
 
   #closed = false;
+  #commandShell: string;
   #containerBinary: string;
   #cwd: string;
   #destroyPromise: Promise<void> | undefined;
@@ -40,6 +41,7 @@ export class AppleContainerSandboxSession {
   #stopPromise: Promise<void> | undefined;
 
   constructor({
+    commandShell,
     containerBinary,
     cwd,
     env,
@@ -47,6 +49,7 @@ export class AppleContainerSandboxSession {
     image,
     ports,
   }: AppleContainerSandboxSessionOptions) {
+    this.#commandShell = commandShell;
     this.#containerBinary = containerBinary;
     this.#cwd = cwd;
     this.#env = env;
@@ -57,7 +60,7 @@ export class AppleContainerSandboxSession {
     this.description = [
       `Apple Container sandbox running image ${image}.`,
       `Default working directory: ${cwd}.`,
-      `Commands execute through /bin/sh -lc inside container ${id}.`,
+      `Commands execute through ${commandShell} -lc inside container ${id}.`,
     ].join("\n");
   }
 
@@ -198,7 +201,7 @@ export class AppleContainerSandboxSession {
       ...createEnvArgs({ ...this.#env, ...env }),
       ...createWorkingDirectoryArgs(workingDirectory),
       this.id,
-      "/bin/sh",
+      this.#commandShell,
       "-lc",
       command,
     ];
