@@ -43,8 +43,8 @@ minimumReleaseAgeExclude:
   - oxfmt@0.57.0
   - oxlint@1.72.0
   - "@ai-sdk/gateway@4.0.6"
-  - "@ai-sdk/harness@1.0.10"
+  - "@ai-sdk/harness@1.0.85"
   - "@ai-sdk/provider-utils@5.0.2"
   - "@ai-sdk/provider@4.0.1"
   - ai@7.0.8
-  - "@ai-sdk/harness-codex@1.0.10"
+  - "@ai-sdk/harness-codex@1.0.87"

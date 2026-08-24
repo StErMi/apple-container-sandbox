@@ -9,8 +9,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@ai-sdk/harness": "1.0.10",
-    "@ai-sdk/harness-codex": "1.0.10",
+    "@ai-sdk/harness": "1.0.85",
+    "@ai-sdk/harness-codex": "1.0.87",
     "@lgrammel/apple-container-sandbox": "workspace:*",
     "dotenv": "^17.4.2",
     "zod": "^4.4.3"

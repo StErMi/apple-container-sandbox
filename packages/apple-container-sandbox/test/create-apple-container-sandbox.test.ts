@@ -76,7 +76,7 @@ test("creates an AI SDK-compatible sandbox session", async () => {
   }
 });
 
-test("publishes configured ports and resolves local port urls", async () => {
+test("publishes configured ports and resolves local port endpoints and urls", async () => {
   const containerBinary = await createFakeContainerCli();
   const cwd = await realpath(await mkdtemp(join(tmpdir(), "apple-container-sandbox-")));
   const logPath = join(cwd, "container-commands.ndjson");
@@ -97,9 +97,18 @@ test("publishes configured ports and resolves local port urls", async () => {
 
     try {
       expect(sandboxSession.ports).toEqual([4100, 5200]);
+      expect(await sandboxSession.getPortEndpoint({ port: 4100 })).toEqual({
+        url: "http://127.0.0.1:4100",
+      });
+      expect(await sandboxSession.getPortEndpoint({ port: 5200, protocol: "ws" })).toEqual({
+        url: "ws://127.0.0.1:5200",
+      });
       expect(await sandboxSession.getPortUrl({ port: 4100 })).toBe("http://127.0.0.1:4100");
       expect(await sandboxSession.getPortUrl({ port: 5200, protocol: "ws" })).toBe(
         "ws://127.0.0.1:5200",
+      );
+      await expect(sandboxSession.getPortEndpoint({ port: 9999 })).rejects.toBeInstanceOf(
+        HarnessCapabilityUnsupportedError,
       );
       await expect(sandboxSession.getPortUrl({ port: 9999 })).rejects.toBeInstanceOf(
         HarnessCapabilityUnsupportedError,

@@ -105,7 +105,7 @@ async function applyBootstrap(
   for (const command of bootstrap.commands) {
     await runRequired(session, {
       command: command.command,
-      workingDirectory: command.workingDirectory,
+      workingDirectory: bootstrap.bootstrapDir,
       abortSignal,
     });
   }
